@@ -2,13 +2,23 @@
 #include <stdlib.h>
 #include "integral.h"
 double pi = 3.14159265;
-
+struct func {
+    char* description;
+    double (*f)(double);
+} menu[] = { {"5x", f}, {"cosx", g}, {"sinx+cosx+lnx", h} };
 int main()
 {
-    printf("5x from 0 to 10 = %lf", dIntegral(f, 0, 10, defaultStep));
-    printf("\n");
-    printf("cosx from 0 to pi/2 = %lf", dIntegral(g, 0, pi/2, defaultStep));
-    printf("\n");
-    printf("sinx + cosx + lnx from 10 to 100 = %lf", dIntegral(h, 10, 100, defaultStep));
+    int n;
+    printf("Enter code of func\n");
+    for (int i = 0; i < 3; ++i) {
+        printf("%d. %s\n", i+1, menu[i].description);
+    }
+    double left, right, delta;
+    scanf_s("%d", &n);
+    n -= 1;
+    printf("Enter limits and step\n");
+    scanf_s("%lf%lf%lf", &left, &right, &delta);
+    if (delta <= 0) delta = defaultStep;
+    printf("%s from %lf to %lf = %lf", menu[n].description, left, right, dIntegral(menu[n].f, left, right, delta));
     return 0;
 }

@@ -1,5 +1,6 @@
 #include "integral.h"
 #include <math.h>
+
 double dIntegral(double (*func)(double), double left, double right, double step) {
     double crn = left, result = 0;
     while (crn < right) {
