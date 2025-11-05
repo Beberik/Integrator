@@ -21,9 +21,15 @@
     <ClCompile Include="integral.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="gauss.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="integral.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="gauss.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
