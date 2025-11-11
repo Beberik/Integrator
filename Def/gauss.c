@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdio.h>
-long double accuracy = 0.00001;
+#include <stdlib.h>
+#include <time.h>
+long double accuracy = 0.0000001;
 // приблизительно сравнивает два значения
 short EqualAccurate(long double a, long double b) {
 	if (a > b) return a - b < accuracy; else return b - a < accuracy;
@@ -12,7 +14,7 @@ long int NormalizeRow(long double* row, long int rowLength) {
 	long int counter = 0;
 	while (counter < rowLength && mn == 0) {
 		if (!EqualAccurate(row[counter], 0)) mn = row[counter]; 
-		counter += 1;
+		counter++;
 	}
 	counter--;
 	if (mn != 0){
@@ -34,6 +36,14 @@ void DecreaseRow(long double* row, long double* minRow, long int rowLength) {
 // выводит строку
 void PrintRow(long double* row, long int rowLength) {
 	for (long int i = 0; i < rowLength; i++) printf("%lf ", row[i]);
+	printf("\n");
+}
+void PrintAnswerRow(long double* row, long int rowLength) {
+	printf("%lf", row[0]);
+	for (long int i = 1; i < rowLength; i++) {
+		if (row[i] > 0) printf("+");
+		printf("%lft%ld", row[i], i);
+	}
 	printf("\n");
 }
 // выводит матрицу
@@ -100,20 +110,9 @@ long int CheckNonZeroRow(long double* row, long int rowLength) {
 	}
 	return cnt;
 }
-// 1 2 3 4 5 6 7 8 9 10 11 12
-// 2 4 0 1 2 3 0 4 5 6
-// 2 4 1 2 3 4 2 4 6 9
-// 2 4 0 0 0 0 0 0 0 0
-// 2 4 1 0 2 3 4 0 5 6
-// 5 6 2 1 1 1 1 14 1 2 1 1 1 13 1 1 2 1 1 12 1 1 1 2 1 11 1 1 1 1 2 10
-// 10 11 10 1 1 1 1 1 1 1 1 1 19 1 10 1 1 1 1 1 1 1 1 19 1 1 10 1 1 1 1 1 1 1 19 1 1 1 10 1 1 1 1 1 1 19 1 1 1 1 10 1 1 1 1 1 19 1 1 1 1 1 10 1 1 1 1 19 1 1 1 1 1 1 10 1 1 1 19 1 1 1 1 1 1 1 10 1 1 19 1 1 1 1 1 1 1 1 10 1 19 1 1 1 1 1 1 1 1 1 10 19
-
-// 9 11 10 1 1 1 1 1 1 1 1 1 19 1 10 1 1 1 1 1 1 1 1 19 1 1 10 1 1 1 1 1 1 1 19 1 1 1 10 1 1 1 1 1 1 19 1 1 1 1 10 1 1 1 1 1 19 1 1 1 1 1 10 1 1 1 1 19 1 1 1 1 1 1 10 1 1 1 19 1 1 1 1 1 1 1 10 1 1 19 1 1 1 1 1 1 1 1 10 1 19
-
-// 2 3 1 2 3 2 4 6
 
 // упрощает систему (система состоит из диагональной матрицы с вкраплениями нулевых столбцов или не имеет решений)
-int SimplifySystem(long double** table, long int n, long int m, short hideLog) {
+int SimplifySystem(long double** table, long int n, long int m, short hideLog, short hideOutput) {
 	// -1 - матрица состоит из нулей, 1 - матрица несовместна
 	switch (CheckNoSolutionTable(table, n, m))
 	{
@@ -170,8 +169,11 @@ int SimplifySystem(long double** table, long int n, long int m, short hideLog) {
 		if (!hideLog)PrintTable(table, bottomBorder, m);
 		if (!hideLog)printf("\n");
 	}
-	if (!hideLog)printf("\n");
-	PrintTable(table, bottomBorder, m);
+	if (!hideOutput) {
+		printf("Simplified form:\n");
+		PrintTable(table, bottomBorder, m);
+	}
+	
 	return bottomBorder;
 }
 short InLIntArray(long int* array, long int arrayLength, long int value) {
@@ -180,6 +182,74 @@ short InLIntArray(long int* array, long int arrayLength, long int value) {
 	}
 	return 0;
 }
-//int PlaceSolutions() {
-//
-//}
+// вывод решений системы (по неизвестной причине не работает здесь)
+void PlaceSolutions(long double** table, long int n, long int m) {
+	long int unaddX = 0;
+	for (long int i = 0; i < m - 1; i++) {
+		if (FindColumnIndex(table, n, i, 0) == -1) unaddX++;
+	}
+	long int* unaddedXTable; unaddedXTable = (long int*)malloc(unaddX * sizeof(long int));
+	long int cnt = 0, usedTemps = m - 1 - n - unaddX;
+	if (usedTemps < 0) usedTemps = 0;
+	for (long int i = 0; i < m - 1; i++) {
+		if (FindColumnIndex(table, n, i, 0) == -1) { unaddedXTable[cnt] = i; cnt++; }
+	}
+	long double** solvesTable;
+	solvesTable = (long double**)malloc(n * sizeof(long double*));
+	for (long int i = 0; i < n; i++) {
+		solvesTable[i] = (long double*)malloc((usedTemps + 1) * sizeof(long double));
+	}
+	solvesTable[0][0] = table[n - 1][m - 1];
+	cnt = 0;
+	long int temp = m - 2;
+	while (cnt < usedTemps) {
+		if (!InLIntArray(unaddedXTable, unaddX, temp)) { solvesTable[0][cnt + 1] = -table[n - 1][temp]; cnt++; }
+		temp--;
+	}
+	//printf("used temps = %d, n = %d, m = %d, unaddX = %d\n", usedTemps, n, m, unaddX);
+	//printf("row %d equals ", n - 1);
+	//PrintRow(solvesTable[0], usedTemps + 1);
+	for (long int i = 1; i < n; i++) {
+		solvesTable[i][0] = table[n - 1 - i][m - 1];
+		//printf("free of row %d = %lf\n", n - 1 - i, solvesTable[i][0]);
+		cnt = 0;
+		for (long int j = m - 2; j >= 0; j--) {
+			if (!InLIntArray(unaddedXTable, unaddX, j)) {
+				if (cnt < usedTemps) solvesTable[i][cnt + 1] = -table[n - 1 - i][j];
+				else {
+					//printf("placing %d into %d\n", cnt - usedTemps, i);
+					//PrintRow(solvesTable[i], usedTemps + 1);
+					if (cnt - usedTemps == i) break;
+					for (long int k = 0; k < usedTemps + 1; k++) solvesTable[i][k] -= solvesTable[cnt - usedTemps][k] * table[n - 1 - i][j];
+				}
+				cnt++;
+			}
+		}
+		//printf("row %d equals ", n - 1 - i);
+		//PrintRow(solvesTable[n - 1 - i], usedTemps + 1);
+	}
+	cnt = 0, temp = usedTemps;
+	printf("System solutions:\n");
+	for (long int i = 0; i < m - 1; i++) {
+		printf("x%d = ", i + 1);
+		if (InLIntArray(unaddedXTable, unaddX, i)) { printf("t%d\n", cnt + usedTemps + 1); cnt++; }
+		else if (n - i - 1 + cnt >= 0) {
+			PrintAnswerRow(solvesTable[n - i - 1 + cnt], usedTemps + 1);
+		}
+		else {
+			printf("t%d\n", temp);
+			temp--;
+		}
+	}
+}
+void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short hideOutput) {
+	srand(time(NULL));
+	for (long int i = 0; i < n; i++) {
+		
+		for (long int j = 0; j < m; j++) {
+			
+			table[i][j] = lowerBound + ((long double)rand() / RAND_MAX) * (upperBound - lowerBound);
+		}
+	}
+	if(!hideOutput) printf("Table generated\n");
+}
