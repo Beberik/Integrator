@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-long double accuracy = 0.0000001;
-// приблизительно сравнивает два значения
-short EqualAccurate(long double a, long double b) {
-	if (a > b) return a - b < accuracy; else return b - a < accuracy;
-	
-}
+#include "gauss.h"
+#include "mathFunctions.h"
+
 // делит каждый элемент строки на первое в строке отличное от 0 число
 long int NormalizeRow(long double* row, long int rowLength) {
 	long double mn = 0;
@@ -126,8 +123,6 @@ int SimplifySystem(long double** table, long int n, long int m, short hideLog, s
 	for (long int i = 0; i < bottomBorder; i++) {
 		long int offset = 0, ind = -1, subInd = -1;
 		// ищем строку с ненулевым элементом на позиции i
-
-		//ind = FindFirstColumnIndex(table, bottomBorder, i, i, m - 1, &subInd);
 		if (!hideLog)printf("Row %ld, leftBorder = %ld, bottomBorder = %ld\n", i, leftBorder, bottomBorder);
 		for (long int j = i; j < m - 1; j++) {
 			
@@ -183,7 +178,7 @@ short InLIntArray(long int* array, long int arrayLength, long int value) {
 	return 0;
 }
 // вывод решений системы (по неизвестной причине не работает здесь)
-void PlaceSolutions(long double** table, long int n, long int m) {
+void PlaceSolutions(long double** table, long int n, long int m, short hideOutput, long int cTime) {
 	long int unaddX = 0;
 	for (long int i = 0; i < m - 1; i++) {
 		if (FindColumnIndex(table, n, i, 0) == -1) unaddX++;
@@ -229,26 +224,30 @@ void PlaceSolutions(long double** table, long int n, long int m) {
 		//PrintRow(solvesTable[n - 1 - i], usedTemps + 1);
 	}
 	cnt = 0, temp = usedTemps;
-	printf("System solutions:\n");
-	for (long int i = 0; i < m - 1; i++) {
-		printf("x%d = ", i + 1);
-		if (InLIntArray(unaddedXTable, unaddX, i)) { printf("t%d\n", cnt + usedTemps + 1); cnt++; }
-		else if (n - i - 1 + cnt >= 0) {
-			PrintAnswerRow(solvesTable[n - i - 1 + cnt], usedTemps + 1);
-		}
-		else {
-			printf("t%d\n", temp);
-			temp--;
+	printf("Real operating time: %.0lfs\n", (long double)((clock()-cTime)/CLOCKS_PER_SEC));
+	if (!hideOutput) {
+		printf("System solutions:\n");
+		for (long int i = 0; i < m - 1; i++) {
+			printf("x%d = ", i + 1);
+			if (InLIntArray(unaddedXTable, unaddX, i)) { printf("t%d\n", cnt + usedTemps + 1); cnt++; }
+			else if (n - i - 1 + cnt >= 0) {
+				PrintAnswerRow(solvesTable[n - i - 1 + cnt], usedTemps + 1);
+			}
+			else {
+				printf("t%d\n", temp);
+				temp--;
+			}
 		}
 	}
+	
 }
-void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short hideOutput) {
-	srand(time(NULL));
+void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short randomizeSeed, short hideOutput, short useGaussian) {
+	if (randomizeSeed) srand((getpid() << 16) + time(NULL));
+	else srand(0);
 	for (long int i = 0; i < n; i++) {
-		
 		for (long int j = 0; j < m; j++) {
-			
-			table[i][j] = lowerBound + ((long double)rand() / RAND_MAX) * (upperBound - lowerBound);
+			if (!useGaussian) table[i][j] = lowerBound + ((long double)rand() / RAND_MAX) * (upperBound - lowerBound);
+			else table[i][j] = lowerBound + (GaussianRandomValue((long double)rand() / RAND_MAX)) * (upperBound - lowerBound);
 		}
 	}
 	if(!hideOutput) printf("Table generated\n");

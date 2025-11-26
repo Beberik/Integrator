@@ -1,6 +1,5 @@
 #ifndef gaussSystem
 #define gaussSystem
-short EqualAccurate(long double a, long double b);
 long int NormalizeRow(long double* row, long int rowLength);
 void PrintRow(long double* row, long int rowLength);
 void PrintTable(long double** table, long int n, long int m);
@@ -14,7 +13,6 @@ long int CheckNonZeroRow(long double* row, long int rowLength);
 short InLIntArray(long int* array, long int arrayLength, long int value);
 long int FindRowIndex(long double* row, long int rowLength);
 void PrintAnswerRow(long double* row, long int rowLength);
-void PlaceSolutions(long double** table, long int n, long int m);
-void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short hideOutput);
-long double accuracy;
+void PlaceSolutions(long double** table, long int n, long int m, short hideOutput, long int cTime);
+void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short randomizeSeed, short hideOutput, short useGaussian);
 #endif

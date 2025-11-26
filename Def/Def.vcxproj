@@ -130,10 +130,12 @@
     <ClCompile Include="gauss.c" />
     <ClCompile Include="integral.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="mathFunctions.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gauss.h" />
     <ClInclude Include="integral.h" />
+    <ClInclude Include="mathFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
