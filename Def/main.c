@@ -3,6 +3,7 @@
 #include <math.h>
 #include "integral.h"
 #include "gauss.h"
+#include "mathFunctions.h"
 double pi = 3.14159265;
 long int awakeTime = 0;
 struct func {
@@ -37,74 +38,72 @@ void DoGaussExample(long double **table, long int n, long int m) {
     SwapRows(&table[0], &table[1]);
     printf("%ld %ld", FindColumnIndex(table, n, 1, 0), FindColumnIndex(table, n, 3, 0));
 }
-//void DoSolutions(long double** table, long int n, long int m) {
-//	long int unaddX = 0;
-//	for (long int i = 0; i < m - 1; i++) {
-//		if (FindColumnIndex(table, n, i, 0) == -1) unaddX++;
-//	}
-//	long int* unaddedXTable; unaddedXTable = (long int*)malloc(unaddX * sizeof(long int));
-//	long int cnt = 0, usedTemps = m - 1 - n - unaddX;
-//	if (usedTemps < 0) usedTemps = 0;
-//	for (long int i = 0; i < m - 1; i++) {
-//		if (FindColumnIndex(table, n, i, 0) == -1) { unaddedXTable[cnt] = i; cnt++; }
-//	}
-//	long double** solvesTable;
-//	solvesTable = (long double**)malloc(n * sizeof(long double*));
-//	for (long int i = 0; i < n; i++) {
-//		solvesTable[i] = (long double*)malloc((usedTemps + 1) * sizeof(long double));
-//	}
-//	solvesTable[0][0] = table[n - 1][m - 1];
-//	cnt = 0;
-//	long int temp = m - 2;
-//	while (cnt < usedTemps) {
-//		if (!InLIntArray(unaddedXTable, unaddX, temp)) { solvesTable[0][cnt + 1] = -table[n - 1][temp]; cnt++; }
-//		temp--;
-//	}
-//	//printf("used temps = %d, n = %d, m = %d, unaddX = %d\n", usedTemps, n, m, unaddX);
-//	//printf("row %d equals ", n - 1);
-//	//PrintRow(solvesTable[0], usedTemps + 1);
-//	for (long int i = 1; i < n; i++) {
-//		solvesTable[i][0] = table[n - 1 - i][m - 1];
-//		//printf("free of row %d = %lf\n", n - 1 - i, solvesTable[i][0]);
-//		cnt = 0;
-//		for (long int j = m - 2; j >= 0; j--) {
-//			if (!InLIntArray(unaddedXTable, unaddX, j)) {
-//				if (cnt < usedTemps) solvesTable[i][cnt + 1] = -table[n - 1 - i][j];
-//				else {
-//					//printf("placing %d into %d\n", cnt - usedTemps, i);
-//					//PrintRow(solvesTable[i], usedTemps + 1);
-//					if (cnt - usedTemps == i) break;
-//					for (long int k = 0; k < usedTemps + 1; k++) solvesTable[i][k] -= solvesTable[cnt - usedTemps][k] * table[n - 1 - i][j];
-//				}
-//				cnt++;
-//			}
-//		}
-//		//printf("row %d equals ", n - 1 - i);
-//		//PrintRow(solvesTable[n - 1 - i], usedTemps + 1);
-//	}
-//	cnt = 0, temp = usedTemps;
-//	printf("%ld\n", clock() - awakeTime);
-//	printf("System solutions:\n");
-//	for (long int i = 0; i < m - 1; i++) {
-//		printf("x%d = ", i + 1);
-//		if (InLIntArray(unaddedXTable, unaddX, i)) { printf("t%d\n", cnt + usedTemps + 1); cnt++; }
-//		else if (n - i - 1 + cnt >= 0) {
-//			PrintAnswerRow(solvesTable[n - i - 1 + cnt], usedTemps + 1);
-//		}
-//		else {
-//			printf("t%d\n", temp);
-//			temp--;
-//		}
-//	}
-//}
 
 // 1000 - 5s
 // 2000 - 41s
 // 3000 - 141s
 // 4000 - 334s
-// 5000 - 
+// 5000 - 660s
 // 6000 - 1455s
 
+void DoDefaultGaussSolution(long double** table, long int n, long int m) {
+    long int nonZeroEquations = SimplifySystem(table, n, m, 1, 1);
+    short flag = 0;
+    switch (nonZeroEquations) {
+    case -2:
+        printf("System simplified\n");
+        printf("System solves:\n");
+        for (long int i = 1; i < m + 1; i++) printf("x%d=t%d\n", i, i);
+        break;
+    case -1: printf("System is inconsistent\n"); break;
+    default:
+        flag = 1;
+        break;
+    }
+    if (flag) {
+        n = nonZeroEquations;
+        PlaceSolutions(table, n, m, 1, awakeTime);
+
+    }
+}
+void DoAccuracyCheck(long double** table, long int n, long int m) {
+    if (n != m - 1) printf("Wrong system size: n != m - 1");
+    else {
+        long double* fakeSolutions;
+        fakeSolutions = (long double*)malloc(n * sizeof(long double));
+        srand((getpid() << 16) + time(NULL));
+        for (long int i = 0; i < n; i++) {
+            long double rnd = 1;
+            for (int i = 0; i < 2; i++) rnd *= (long double)rand() / RAND_MAX;
+            fakeSolutions[i] = pow(rnd, 0.5);
+        }
+        for (long int i = 0; i < n; i++) {
+            long double freep = 0;
+            for (long int j = 0; j < n; j++) freep += table[i][j] * fakeSolutions[j];
+            table[i][n] = freep;
+        }
+        
+        SimplifySystem(table, n, m, 1, 1);
+        long double** realSolutions = PlaceSolutions(table, n, m, 1, awakeTime);
+        //PrintRow(fakeSolutions, n);
+        long double arithmeticMean = 0, squareMean = 0;
+        for (long int i = 0; i < n; i++) {
+            arithmeticMean += Abs(fakeSolutions[i] - realSolutions[i][0]);
+            squareMean += pow(fakeSolutions[i] - realSolutions[i][0], 2);
+        }
+        arithmeticMean /= n;
+        squareMean /= n;
+        squareMean = pow(squareMean, 0.5);
+        printf("Arithmetic mean accuracy = %lf, square mean accuracy = %lf\n", arithmeticMean, squareMean);
+    }
+    // 1000 - 0.25 0.31
+    // 2000 - 0.27 0.33
+    // 3000 - 0.26 0.32
+    // 4000 - 0.27 0.32
+    // 5000 - 0.27 0.33
+    // Arithmetic mean - 0.26 0.32
+    
+}
 int main()
 {
     //DoIntegralExample();
@@ -116,33 +115,26 @@ int main()
     long double** table;
     table = (long double**)malloc(n * sizeof(long double*));
     for (long int i = 0; i < n; i++) table[i] = (long double*)malloc(m * sizeof(long double));
-	GenerateRandomTable(table, n, m, 0, 1, 1, 1, 1);
+	GenerateRandomTable(table, n, m, 0, 1, 1, 1, 1, 3);
     /*for (long int i = 0; i < n; i++) {
         for (long int j = 0; j < m; j++)
             scanf_s("%lf", &table[i][j]);
-    }*/
-    //DoGaussExample(table, n, m);
-	//printf("Input:\n");
-    //PrintTable(table, n, m);
-    long int nonZeroEquations = SimplifySystem(table, n, m, 1, 1);
-    short flag = 0;
-    switch (nonZeroEquations) {
-    case -2: 
-        printf("System simplified\n"); 
-        printf("System solves:\n");
-        for (long int i = 1; i < m + 1; i++) printf("x%d=t%d\n", i, i);
-        break;
-    case -1: printf("System is inconsistent\n"); break;
-    default: 
-        flag = 1;
-        break;
     }
-    if (flag) {
-		n = nonZeroEquations;
-		PlaceSolutions(table, n, m, 1, awakeTime); // doesn't work in gauss.c, works in main.c. Why?
-		//DoSolutions(table, n, m);
-		
+    DoGaussExample(table, n, m);
+	printf("Input:\n");
+    PrintTable(table, n, m);*/
+    int* cnt;
+    cnt = (int*)malloc(10 * sizeof(int));
+    for (long int i = 0; i < 10; i++) cnt[i] = 0;
+    for (long int i = 0; i < n; i++) {
+        for (long int j = 0; j < n; j++) {
+            cnt[(int)floor((table[i][j]) / 0.1)]++;
+        }
     }
+    printf("Distribution:\n"); // if values vary from 0 to 1, shows amount of values on 0-0.1, 0.1-0.2 ... 0.9-1
+    for (long int i = 0; i < 10; i++) printf("%d ", cnt[i]);
+    printf("\n");
+    //DoDefaultGaussSolution(table, n, m);
+    DoAccuracyCheck(table, n, m);
     return 0;
 }
-

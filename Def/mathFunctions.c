@@ -13,3 +13,6 @@ short EqualAccurate(long double a, long double b) {
 long double GaussianRandomValue(double x) {
 	return pow(e, -(4 * x - 2) * (4 * x - 2)) - 0.01;
 }
+long double Abs(long double a) {
+	if (a > 0) return a; return -a;
+}

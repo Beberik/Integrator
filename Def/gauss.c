@@ -177,8 +177,8 @@ short InLIntArray(long int* array, long int arrayLength, long int value) {
 	}
 	return 0;
 }
-// вывод решений системы (по неизвестной причине не работает здесь)
-void PlaceSolutions(long double** table, long int n, long int m, short hideOutput, long int cTime) {
+// вывод решений системы
+long double** PlaceSolutions(long double** table, long int n, long int m, short hideOutput, long int cTime) {
 	long int unaddX = 0;
 	for (long int i = 0; i < m - 1; i++) {
 		if (FindColumnIndex(table, n, i, 0) == -1) unaddX++;
@@ -239,15 +239,20 @@ void PlaceSolutions(long double** table, long int n, long int m, short hideOutpu
 			}
 		}
 	}
-	
+	return solvesTable;
 }
-void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short randomizeSeed, short hideOutput, short useGaussian) {
+void GenerateRandomTable(long double** table, long int n, long int m, long double lowerBound, long double upperBound, short randomizeSeed, short hideOutput, short useGaussian, double entropy) {
 	if (randomizeSeed) srand((getpid() << 16) + time(NULL));
 	else srand(0);
 	for (long int i = 0; i < n; i++) {
 		for (long int j = 0; j < m; j++) {
-			if (!useGaussian) table[i][j] = lowerBound + ((long double)rand() / RAND_MAX) * (upperBound - lowerBound);
-			else table[i][j] = lowerBound + (GaussianRandomValue((long double)rand() / RAND_MAX)) * (upperBound - lowerBound);
+			
+			if (!useGaussian) table[i][j] = lowerBound + (long double)rand() / RAND_MAX * (upperBound - lowerBound);
+			else {
+				long double rnd = 1;
+				for (int i = 0; i < entropy; i++) rnd *= (long double)rand() / RAND_MAX;
+				table[i][j] = lowerBound + pow(rnd, 1/entropy) * (upperBound - lowerBound);
+			}
 		}
 	}
 	if(!hideOutput) printf("Table generated\n");
